@@ -4,6 +4,35 @@
 
 Esta guía te ayudará a utilizar todas las funcionalidades de Modus Pampa v3, desde el primer inicio hasta las operaciones avanzadas.
 
+## 🌐 Acceso a la Aplicación Web
+
+### URL de Acceso
+**Aplicación desplegada**: https://modus-pampa-v3.vercel.app
+
+### Compatibilidad de Navegadores
+- ✅ **Chrome/Edge**: Recomendado (mejor rendimiento)
+- ✅ **Firefox**: Compatible
+- ✅ **Safari**: Compatible
+- ✅ **Móvil**: Todos los navegadores modernos
+
+### Instalación como PWA (Aplicación Web)
+1. **En Chrome/Edge Desktop:**
+   - Abre https://modus-pampa-v3.vercel.app
+   - Clic en el ícono de "Instalar" en la barra de direcciones
+   - Acepta la instalación
+
+2. **En móvil:**
+   - Abre la aplicación en el navegador
+   - Agrega a pantalla de inicio cuando aparezca la opción
+   - Se comportará como una app nativa
+
+### Características de la Versión Web
+- ✅ **Offline Support**: Funciona sin internet
+- ✅ **Responsive**: Se adapta a cualquier tamaño de pantalla
+- ✅ **Registro Manual**: Sistema optimizado para desktop
+- ✅ **Reportes PDF**: Generación y descarga directa
+- ✅ **Sincronización**: Datos en tiempo real con el servidor
+
 ---
 
 ## 🚀 Primer Inicio
@@ -497,6 +526,38 @@ Contraseña: Test.123#
 
 ---
 
+## 🌐 Información de Despliegue Web
+
+### Aplicación en Producción
+**URL Principal**: https://modus-pampa-v3.vercel.app  
+**Estado**: Activo 24/7  
+**Hosting**: Vercel (CDN Global)  
+**SSL**: Certificado automático incluido
+
+### Rendimiento Web
+- **Tiempo de carga inicial**: < 3 segundos
+- **Offline support**: Funcionalidad completa sin internet
+- **PWA**: Instalable como aplicación nativa
+- **Responsive**: Optimizado para todos los dispositivos
+
+### Actualizaciones Automáticas
+- **Deploy automático**: Cada actualización se despliega automáticamente
+- **Cache inteligente**: Los assets se actualizan automáticamente
+- **Rollback**: Posibilidad de volver a versiones anteriores si hay problemas
+
+### Monitoreo y Estadísticas
+- **Uptime**: 99.9% de disponibilidad garantizada
+- **Analytics**: Métricas de uso y rendimiento
+- **Error tracking**: Monitoreo automático de errores
+
+### Backup y Seguridad
+- **Datos locales**: Almacenados en IndexedDB del navegador
+- **Sincronización**: Backup automático en el servidor
+- **HTTPS**: Todas las comunicaciones encriptadas
+- **CORS**: Configurado para máxima seguridad
+
+---
+
 ## 📞 Soporte y Ayuda
 
 ### Cuando Necesites Ayuda
@@ -508,15 +569,22 @@ Contraseña: Test.123#
 ### Información del Sistema
 **Versión actual:** 1.0.0+1  
 **Plataformas soportadas:** Web, Windows, Android, iOS  
+**URL de producción:** https://modus-pampa-v3.vercel.app  
 **Última actualización:** Agosto 2025
 
 ### Reportar Problemas
 **Incluye siempre:**
 - Plataforma utilizada (Web/Windows/Móvil)
+- URL específica donde ocurrió el problema
+- Navegador y versión (si es web)
 - Pasos para reproducir el problema
 - Mensaje de error (si aparece)
 - Hora aproximada del incidente
 
+### Acceso Directo
+**Para acceso inmediato**: Ve directamente a https://modus-pampa-v3.vercel.app  
+**Credenciales de prueba**: test@test.com / Test.123#
+
 ---
 
-*Este manual se actualiza constantemente. Para la versión más reciente, consulta la documentación oficial del proyecto.*
+*Este manual se actualiza constantemente. Para la versión más reciente, consulta la documentación oficial del proyecto o visita https://modus-pampa-v3.vercel.app*

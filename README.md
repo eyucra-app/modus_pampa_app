@@ -119,6 +119,62 @@ flutter run -d <device-id>
 - Acceso completo a cámara
 - Notificaciones push (futuro)
 
+## 🌐 Despliegue en Vercel
+
+### Aplicación Desplegada
+**URL Principal**: https://modus-pampa-v3.vercel.app  
+**Credenciales de acceso**:
+- Usuario: `test@test.com`
+- Contraseña: `Test.123#`
+
+### Despliegue Automático desde GitHub
+
+1. **Conectar repositorio a Vercel:**
+   - Ve a [vercel.com](https://vercel.com) e inicia sesión
+   - Clic en "New Project"
+   - Conecta tu cuenta GitHub
+   - Selecciona el repositorio `modus_pampa_app`
+   - Vercel detectará automáticamente la configuración
+
+2. **Configuración automática:**
+   - Build Command: `chmod +x install.sh && ./install.sh && ./flutter/bin/flutter build web --release`
+   - Output Directory: `build/web`
+   - Install Command: Personalizado con Flutter
+
+3. **Deploy automático:**
+   - Cada push a `main` despliega automáticamente
+   - Build toma aproximadamente 2-3 minutos
+   - SSL y CDN incluidos automáticamente
+
+### Despliegue Manual con Vercel CLI
+
+```bash
+# Instalar Vercel CLI
+npm install -g vercel
+
+# Login en Vercel
+vercel login
+
+# Deploy en producción
+vercel --prod --yes
+```
+
+### Archivos de Configuración
+
+- **`vercel.json`**: Configuración de build y rutas
+- **`install.sh`**: Script de instalación de Flutter
+- **`package.json`**: Metadata del proyecto
+- **`.vercelignore`**: Archivos excluidos del deploy
+
+### Características del Deploy
+
+- ✅ **PWA Ready**: Instalable como app nativa
+- ✅ **Offline Support**: Service Worker incluido
+- ✅ **Responsive**: Optimizado para todos los dispositivos
+- ✅ **SSL**: Certificado automático
+- ✅ **CDN Global**: Distribución mundial
+- ✅ **Build Optimizado**: Tree-shaking y compresión
+
 ## 🏗️ Arquitectura del Proyecto
 
 ```
