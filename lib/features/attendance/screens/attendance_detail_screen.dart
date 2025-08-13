@@ -34,11 +34,12 @@ class _AttendanceDetailScreenState
   @override
   void reassemble() {
     super.reassemble();
-    if (!kIsWeb && !Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
+    // Solo manejar cámara en plataformas móviles (Android/iOS)
+    if (Platform.isAndroid || Platform.isIOS) {
       if (Platform.isAndroid) {
-        controller!.pauseCamera();
+        controller?.pauseCamera();
       }
-      controller!.resumeCamera();
+      controller?.resumeCamera();
     }
   }
 
@@ -124,8 +125,8 @@ class _AttendanceDetailScreenState
   }
 
   Widget _buildQRScanner() {
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      // Interfaz de registro manual para Windows/Desktop
+    if (kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      // Interfaz de registro manual para Web y Desktop
       return Container(
         color: Colors.black87,
         child: Center(
@@ -133,7 +134,7 @@ class _AttendanceDetailScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.desktop_windows,
+                kIsWeb ? Icons.web : Icons.desktop_windows,
                 size: 60,
                 color: Colors.white70,
               ),
@@ -149,7 +150,9 @@ class _AttendanceDetailScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                'Usa el botón "Registrar Manualmente"\npara agregar afiliados a la lista',
+                kIsWeb 
+                  ? 'Versión Web optimizada para registro manual\nUsa el botón "Registrar Manualmente"'
+                  : 'Usa el botón "Registrar Manualmente"\npara agregar afiliados a la lista',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -187,8 +190,8 @@ class _AttendanceDetailScreenState
   }
 
   List<Widget> _buildCameraControls() {
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      // No mostrar controles en Windows, ya están integrados en la interfaz
+    if (kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      // No mostrar controles en Web y Desktop, ya están integrados en la interfaz
       return [];
     } else {
       // Controles para qr_code_scanner_plus
