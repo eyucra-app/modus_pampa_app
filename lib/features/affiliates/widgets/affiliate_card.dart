@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:modus_pampa_v3/data/models/affiliate_model.dart';
@@ -23,12 +24,16 @@ class AffiliateCard extends StatelessWidget {
     final photoPath = affiliate.profilePhotoUrl;
 
     if (photoPath != null && photoPath.isNotEmpty) {
-      // Si la ruta existe como un archivo local, usa FileImage.
-      // De lo contrario, asume que es una URL de red.
-      if (File(photoPath).existsSync()) {
-        imageProvider = FileImage(File(photoPath));
-      } else {
+      if (kIsWeb) {
+        // En web, asumir que todas las rutas son URLs de red
         imageProvider = CachedNetworkImageProvider(photoPath);
+      } else {
+        // En plataformas nativas, verificar si es archivo local
+        if (File(photoPath).existsSync()) {
+          imageProvider = FileImage(File(photoPath));
+        } else {
+          imageProvider = CachedNetworkImageProvider(photoPath);
+        }
       }
     }
     // --- FIN DE LA LÓGICA DE IMAGEN ---

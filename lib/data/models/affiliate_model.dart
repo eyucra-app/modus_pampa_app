@@ -15,6 +15,8 @@ class Affiliate {
   final List<String> tags;
   final double totalPaid;
   final double totalDebt;
+  final DateTime createdAt; // Agregado explícitamente y hecho requerido
+  final DateTime? updatedAt; 
 
   Affiliate({
     required this.uuid,
@@ -30,6 +32,8 @@ class Affiliate {
     this.tags = const [],
     this.totalPaid = 0.0,
     this.totalDebt = 0.0,
+    required this.createdAt, // Ahora es requerido
+    this.updatedAt,
   });
 
   String get fullName => '$firstName $lastName';
@@ -49,10 +53,29 @@ class Affiliate {
       'tags': jsonEncode(tags),
       'total_paid': totalPaid,
       'total_debt': totalDebt,
+      'created_at': createdAt.toIso8601String(), // Convertir DateTime a String ISO 8601
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
   factory Affiliate.fromMap(Map<String, dynamic> map) {
+    
+    dynamic currentTags = map['tags'];
+
+    // Bucle de limpieza para decodificar tags anidados
+    while (currentTags is String && currentTags.startsWith('[') && currentTags.length > 2) {
+      try {
+        currentTags = jsonDecode(currentTags);
+      } catch (e) {
+        break; // Romper si no se puede decodificar más
+      }
+    }
+    
+    // Asegurar que el resultado final sea una lista de strings
+    final List<String> tagsList = currentTags is List
+        ? List<String>.from(currentTags.map((e) => e.toString()))
+        : [];
+
     return Affiliate(
       uuid: map['uuid'],
       id: map['id'],
@@ -64,9 +87,11 @@ class Affiliate {
       currentAffiliateName: map['current_affiliate_name'],
       profilePhotoUrl: map['profile_photo_url'],
       credentialPhotoUrl: map['credential_photo_url'],
-      tags: List<String>.from(jsonDecode(map['tags'] ?? '[]')),
-      totalPaid: map['total_paid'] ?? 0.0,
-      totalDebt: map['total_debt'] ?? 0.0,
+      tags: tagsList,
+      totalPaid: (map['total_paid'] as num?)?.toDouble() ?? 0.0,
+      totalDebt: (map['total_debt'] as num?)?.toDouble() ?? 0.0,
+      createdAt: DateTime.parse(map['created_at']), // Convertir String a DateTime
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at']) : null,
     );
   }
 
@@ -84,6 +109,8 @@ class Affiliate {
     List<String>? tags,
     double? totalPaid,
     double? totalDebt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Affiliate(
       uuid: uuid ?? this.uuid,
@@ -99,6 +126,8 @@ class Affiliate {
       tags: tags ?? this.tags,
       totalPaid: totalPaid ?? this.totalPaid,
       totalDebt: totalDebt ?? this.totalDebt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt, 
     );
   }
 

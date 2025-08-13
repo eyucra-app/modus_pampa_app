@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:modus_pampa_v3/data/models/configuration_model.dart';
 import 'package:modus_pampa_v3/data/models/user_model.dart';
 import 'package:modus_pampa_v3/features/auth/providers/auth_providers.dart';
 import 'package:modus_pampa_v3/features/settings/providers/settings_provider.dart';
+import 'package:modus_pampa_v3/features/settings/screens/pending_operations_screen.dart';
+import 'package:modus_pampa_v3/features/settings/services/sync_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -12,18 +15,34 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  late final TextEditingController _lateFineController;
-  late final TextEditingController _absentFineController;
-  late final TextEditingController _backendUrlController;
+  late TextEditingController _lateFineController;
+  late TextEditingController _absentFineController;
+  late TextEditingController _backendUrlController;
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    final settings = ref.read(settingsServiceProvider);
-    _lateFineController = TextEditingController(text: settings.getFineAmountLate().toString());
-    _absentFineController = TextEditingController(text: settings.getFineAmountAbsent().toString());
-    _backendUrlController = TextEditingController(text: settings.getBackendUrl());
+    // Inicialización simple, los valores se cargarán en didChangeDependencies.
+    _lateFineController = TextEditingController();
+    _absentFineController = TextEditingController();
+    _backendUrlController = TextEditingController();
+  }
+
+  // --- 1. USA didChangeDependencies PARA ACTUALIZAR LOS CONTROLLERS ---
+  // Este método se llama cuando las dependencias del widget cambian.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Observamos los nuevos providers.
+    final lateFine = ref.watch(lateFineAmountProvider);
+    final absentFine = ref.watch(absentFineAmountProvider);
+    final backendUrl = ref.watch(backendUrlProvider);
+
+    // Actualizamos el texto de los controllers, que a su vez actualizan la UI.
+    _lateFineController.text = lateFine.toString();
+    _absentFineController.text = absentFine.toString();
+    _backendUrlController.text = backendUrl;
   }
 
   @override
@@ -34,19 +53,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.dispose();
   }
 
-  void _saveSettings() {
+  void _saveSettings() async {
     if (_formKey.currentState!.validate()) {
-      final settings = ref.read(settingsServiceProvider);
-      settings.setFineAmountLate(double.tryParse(_lateFineController.text) ?? 5.0);
-      settings.setFineAmountAbsent(double.tryParse(_absentFineController.text) ?? 20.0);
-      settings.setBackendUrl(_backendUrlController.text);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configuración guardada.'), backgroundColor: Colors.green));
+      final settingsToSave = AppSettings(
+        montoMultaRetraso: double.tryParse(_lateFineController.text) ?? 5.0,
+        montoMultaFalta: double.tryParse(_absentFineController.text) ?? 20.0,
+        backendUrl: _backendUrlController.text,
+      );
+
+      final success = await ref.read(settingsServiceProvider).saveSettings(settingsToSave);
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configuración guardada en el servidor.'), backgroundColor: Colors.green));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al guardar. Revisa la conexión.'), backgroundColor: Colors.red));
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(authStateProvider) as Authenticated;
+    final pendingOpsCount = ref.watch(pendingOperationsProvider).asData?.value.length ?? 0;
     
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración')),
@@ -73,13 +103,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
 
               const Divider(height: 40),
-              Text('Operaciones Pendientes', style: Theme.of(context).textTheme.titleLarge),
+              Text('Sincronización', style: Theme.of(context).textTheme.titleLarge),
               ListTile(
-                leading: const Icon(Icons.sync),
-                title: const Text('Sincronizar con el servidor'),
-                subtitle: const Text('0 operaciones pendientes'), // Placeholder
+                leading: Badge(
+                  label: Text('$pendingOpsCount'),
+                  isLabelVisible: pendingOpsCount > 0,
+                  child: const Icon(Icons.sync_problem_outlined),
+                ),
+                title: const Text('Operaciones Pendientes'),
+                subtitle: Text('$pendingOpsCount ${pendingOpsCount == 1 ? 'operación esperando' : 'operaciones esperando'} para sincronizar'),
                 onTap: () {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sincronizando...')));
+                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PendingOperationsScreen()));
                 },
               )
             ],

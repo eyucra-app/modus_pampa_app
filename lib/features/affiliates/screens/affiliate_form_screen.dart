@@ -1,7 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:modus_pampa_v3/core/providers/connectivity_provider.dart';
 import 'package:modus_pampa_v3/core/providers/theme_provider.dart';
 import 'package:modus_pampa_v3/data/models/affiliate_model.dart';
 import 'package:modus_pampa_v3/features/affiliates/providers/affiliate_providers.dart';
@@ -10,6 +12,7 @@ import 'package:modus_pampa_v3/features/contributions/providers/contribution_pro
 import 'package:modus_pampa_v3/features/fines/providers/fines_providers.dart';
 import 'package:modus_pampa_v3/features/reports/providers/pdf_service_provider.dart';
 import 'package:modus_pampa_v3/features/reports/screens/pdf_viewer_screen.dart';
+import 'package:modus_pampa_v3/features/settings/providers/cloudinary_provider.dart';
 import 'package:modus_pampa_v3/shared/utils/validators.dart';
 import 'package:speed_dial_fab/speed_dial_fab.dart';
 import 'package:go_router/go_router.dart';
@@ -130,37 +133,90 @@ class _AffiliateFormScreenState extends ConsumerState<AffiliateFormScreen> {
   void _confirmDelete() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Confirmar Eliminación'),
-            content: Text(
-              '¿Está seguro de que desea eliminar a ${widget.affiliate!.fullName}?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => context.pop(),
-                child: const Text('Cancelar'),
+      builder: (dialogContext) {
+        // 1. Envolvemos el AlertDialog con un StatefulBuilder para manejar el estado de carga
+        bool isDeleting = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Confirmar Eliminación'),
+              content: Text(
+                '¿Está seguro de que desea eliminar a ${widget.affiliate!.fullName}?',
               ),
-              FilledButton(
-                onPressed: () {
-                  context.pop();
-                  ref
-                      .read(affiliateOperationProvider.notifier)
-                      .deleteAffiliate(widget.affiliate!.uuid);
-                  context.pop();
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancelar'),
                 ),
-                child: const Text('Eliminar'),
-              ),
-            ],
-          ),
+                FilledButton(
+                  // 2. Deshabilitamos el botón y mostramos el indicador si se está eliminando
+                  onPressed: isDeleting
+                      ? null
+                      : () async {
+                          setState(() {
+                            isDeleting = true;
+                          });
+                          await ref
+                              .read(affiliateOperationProvider.notifier)
+                              .deleteAffiliate(widget.affiliate!.uuid);
+                          if (mounted) {
+                            Navigator.of(dialogContext).pop(); // Cierra el diálogo
+                            context.pop(); // Regresa a la lista
+                          }
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: isDeleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ))
+                      : const Text('Eliminar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
   Future<void> _saveAffiliate() async {
     if (_formKey.currentState!.validate()) {
+
+      // Muestra un indicador de carga mientras se procesa
+      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+      
+      final connectivityResult = await ref.read(connectivityStreamProvider.future);
+      final isOnline = connectivityResult.contains(ConnectivityResult.mobile) || connectivityResult.contains(ConnectivityResult.wifi);
+      
+      String? finalProfileUrl = widget.affiliate?.profilePhotoUrl;
+      String? finalCredentialUrl = widget.affiliate?.credentialPhotoUrl;
+
+      try {
+        // --- LÓGICA DE SUBIDA DE IMÁGENES ---
+        if (isOnline) {
+          final cloudinaryService = ref.read(cloudinaryServiceProvider);
+          if (_profileImageFile != null) {
+            finalProfileUrl = await cloudinaryService.uploadImage(_profileImageFile!);
+          }
+          if (_credentialImageFile != null) {
+            finalCredentialUrl = await cloudinaryService.uploadImage(_credentialImageFile!);
+          }
+        } else {
+          // Si está offline, simplemente guarda la ruta local del archivo
+          if (_profileImageFile != null) {
+            finalProfileUrl = _profileImageFile!.path;
+          }
+          if (_credentialImageFile != null) {
+            finalCredentialUrl = _credentialImageFile!.path;
+          }
+        }
+
       final notifier = ref.read(affiliateOperationProvider.notifier);
       final tags =
           _tagsController.text
@@ -179,11 +235,8 @@ class _AffiliateFormScreenState extends ConsumerState<AffiliateFormScreen> {
           originalAffiliateName: _originalAffiliateController.text.trim(),
           currentAffiliateName: _currentAffiliateController.text.trim(),
           tags: tags,
-          profilePhotoUrl:
-              _profileImageFile?.path ?? widget.affiliate!.profilePhotoUrl,
-          credentialPhotoUrl:
-              _credentialImageFile?.path ??
-              widget.affiliate!.credentialPhotoUrl,
+          profilePhotoUrl: finalProfileUrl,
+          credentialPhotoUrl: finalCredentialUrl,
         );
       } else {
         affiliateToSave = Affiliate(
@@ -196,8 +249,10 @@ class _AffiliateFormScreenState extends ConsumerState<AffiliateFormScreen> {
           originalAffiliateName: _originalAffiliateController.text.trim(),
           currentAffiliateName: _currentAffiliateController.text.trim(),
           tags: tags,
-          profilePhotoUrl: _profileImageFile?.path,
-          credentialPhotoUrl: _credentialImageFile?.path,
+          profilePhotoUrl: finalProfileUrl,
+          credentialPhotoUrl: finalCredentialUrl,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
       }
       bool success = false;
@@ -209,6 +264,11 @@ class _AffiliateFormScreenState extends ConsumerState<AffiliateFormScreen> {
       if (success && mounted) {
         context.pop();
       }
+      } catch (e) {
+        Navigator.of(context).pop(); // Cierra el loader en caso de error
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error al guardar: $e"), backgroundColor: Colors.red));
+      }
+    
     }
   }
 
@@ -557,14 +617,26 @@ class _AffiliateFormScreenState extends ConsumerState<AffiliateFormScreen> {
   Widget _buildCircularImage(BuildContext context) {
     ImageProvider? imageProvider;
     if (_profileImageFile != null) {
-      imageProvider = FileImage(File(_profileImageFile!.path));
-    } else if (widget.affiliate?.profilePhotoUrl != null) {
-      if (File(widget.affiliate!.profilePhotoUrl!).existsSync()) {
-        imageProvider = FileImage(File(widget.affiliate!.profilePhotoUrl!));
+      if (kIsWeb) {
+        imageProvider = NetworkImage(_profileImageFile!.path);
       } else {
+        imageProvider = FileImage(File(_profileImageFile!.path));
+      }
+    } else if (widget.affiliate?.profilePhotoUrl != null) {
+      if (kIsWeb) {
+        // En web, asumir que todas las URLs son de red
         imageProvider = CachedNetworkImageProvider(
           widget.affiliate!.profilePhotoUrl!,
         );
+      } else {
+        // En plataformas nativas, verificar si es archivo local
+        if (File(widget.affiliate!.profilePhotoUrl!).existsSync()) {
+          imageProvider = FileImage(File(widget.affiliate!.profilePhotoUrl!));
+        } else {
+          imageProvider = CachedNetworkImageProvider(
+            widget.affiliate!.profilePhotoUrl!,
+          );
+        }
       }
     }
     return CircleAvatar(
@@ -581,14 +653,26 @@ class _AffiliateFormScreenState extends ConsumerState<AffiliateFormScreen> {
   Widget _buildRectangularImage(BuildContext context) {
     ImageProvider? imageProvider;
     if (_credentialImageFile != null) {
-      imageProvider = FileImage(File(_credentialImageFile!.path));
-    } else if (widget.affiliate?.credentialPhotoUrl != null) {
-      if (File(widget.affiliate!.credentialPhotoUrl!).existsSync()) {
-        imageProvider = FileImage(File(widget.affiliate!.credentialPhotoUrl!));
+      if (kIsWeb) {
+        imageProvider = NetworkImage(_credentialImageFile!.path);
       } else {
+        imageProvider = FileImage(File(_credentialImageFile!.path));
+      }
+    } else if (widget.affiliate?.credentialPhotoUrl != null) {
+      if (kIsWeb) {
+        // En web, asumir que todas las URLs son de red
         imageProvider = CachedNetworkImageProvider(
           widget.affiliate!.credentialPhotoUrl!,
         );
+      } else {
+        // En plataformas nativas, verificar si es archivo local
+        if (File(widget.affiliate!.credentialPhotoUrl!).existsSync()) {
+          imageProvider = FileImage(File(widget.affiliate!.credentialPhotoUrl!));
+        } else {
+          imageProvider = CachedNetworkImageProvider(
+            widget.affiliate!.credentialPhotoUrl!,
+          );
+        }
       }
     }
     return AspectRatio(

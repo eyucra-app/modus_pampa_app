@@ -19,6 +19,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
+  int _welcomeTapCount = 0;
+  bool _showRegisterButton = false;
+
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -35,18 +39,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _handleWelcomeTap() {
+    setState(() {
+      _welcomeTapCount++;
+      if (_welcomeTapCount >= 5) {
+        _showRegisterButton = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
 
     ref.listen<AuthState>(authStateProvider, (previous, next) {
+      print("🎧 Login screen listener - Previous: ${previous.runtimeType}, Next: ${next.runtimeType}");
       if (next is AuthError) {
+        print("🚨 Mostrando SnackBar de error: ${next.message}");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.message),
             backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 4),
           ),
         );
+      } else if (next is Authenticated) {
+        print("✅ Usuario autenticado en UI: ${next.user.email}");
       }
     });
 
@@ -60,11 +78,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Bienvenido a\nModus Pampa v3',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineLarge,
-                ).animate().fade(duration: 500.ms).slideY(begin: -0.5),
+                GestureDetector(
+                  onTap: _handleWelcomeTap,
+                  child: Text(
+                    'Bienvenido a\nModus Pampa v3',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineLarge,
+                  ).animate().fade(duration: 500.ms).slideY(begin: -0.5),
+                ),
                 const SizedBox(height: 48),
                 TextFormField(
                   controller: _emailController,
@@ -109,9 +130,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: const Text('INICIAR SESIÓN'),
                   ).animate().fade(delay: 400.ms),
                 const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => context.go(AppRoutes.register),
-                  child: const Text('¿No tienes una cuenta? Regístrate'),
+                Visibility(
+                  visible: _showRegisterButton,
+                  child: TextButton(
+                    onPressed: () => context.go(AppRoutes.register),
+                    child: const Text('¿No tienes una cuenta? Regístrate'),
+                  ),
                 ),
                 TextButton(
                   onPressed: () => context.go(AppRoutes.guestLogin),

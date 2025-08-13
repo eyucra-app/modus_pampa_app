@@ -1,0 +1,14 @@
+{
+  "name": "modus-pampa-v3",
+  "version": "1.0.0",
+  "description": "Flutter app for affiliate and attendance management",
+  "scripts": {
+    "build": "flutter build web --release",
+    "dev": "flutter run -d chrome"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -13,22 +13,35 @@ import 'package:modus_pampa_v3/features/auth/providers/auth_providers.dart';
 import 'package:modus_pampa_v3/features/auth/providers/guest_affiliate_provider.dart';
 import 'package:modus_pampa_v3/features/auth/screens/guest_login_screen.dart';
 import 'package:modus_pampa_v3/features/auth/screens/login_screen.dart';
+import 'package:modus_pampa_v3/features/auth/screens/offline_splash_screen.dart';
 import 'package:modus_pampa_v3/features/auth/screens/register_screen.dart';
+import 'package:modus_pampa_v3/features/auth/screens/splash_screen.dart';
 import 'package:modus_pampa_v3/features/contributions/screens/contributions_screen.dart';
 import 'package:modus_pampa_v3/features/fines/screens/fines_screen.dart';
 import 'package:modus_pampa_v3/features/settings/screens/settings_screen.dart';
+import 'package:modus_pampa_v3/features/settings/screens/pending_operations_screen.dart';
 import 'package:modus_pampa_v3/shared/widgets/main_scaffold.dart';
 import 'package:modus_pampa_v3/shared/widgets/side_menu.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  // 1. Observa el estado de autenticación. GoRouter se reconstruirá si cambia.
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: AppRoutes.login,
-    // Observa el provider de invitado para refrescar la redirección
+    initialLocation: AppRoutes.splashScreen,
+    // 2. El refreshListenable se encarga de los cambios en el modo invitado,
+    // por lo que no necesitamos lógica de invitado en el redirect.
     refreshListenable: GoRouterRefreshStream(ref.watch(guestAffiliateProvider.notifier).stream),
     routes: [
       // --- RUTAS PÚBLICAS Y DE INVITADO ---
+      GoRoute(
+        path: AppRoutes.offlineSplashScreen,
+        builder: (context, state) => const OfflineSplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.splashScreen,
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
@@ -75,42 +88,51 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: AppRoutes.fines, builder: (context, state) => const FinesScreen()),
           GoRoute(path: AppRoutes.attendance, builder: (context, state) => const AttendanceScreen()),
           GoRoute(path: AppRoutes.settings, builder: (context, state) => const SettingsScreen()),
+          GoRoute(path: AppRoutes.pendingOperations, builder: (context, state) => const PendingOperationsScreen()),
         ],
       ),
     ],
     redirect: (BuildContext context, GoRouterState state) {
       final isAuthenticated = authState is Authenticated;
-      final isGuest = ref.read(guestAffiliateProvider) != null;
+      final location = state.matchedLocation;
 
-      final publicRoutes = [AppRoutes.login, AppRoutes.register, AppRoutes.guestLogin];
-      final isGoingToPublic = publicRoutes.contains(state.matchedLocation);
+      // Define todas las rutas que un usuario puede visitar SIN estar autenticado.
+      final publicRoutes = [
+        AppRoutes.splashScreen,
+        AppRoutes.offlineSplashScreen,
+        AppRoutes.login,
+        AppRoutes.register,
+        AppRoutes.guestLogin,
+        AppRoutes.guestDetail,
+      ];
 
-      // Si no estamos autenticados Y no hay un invitado activo Y no vamos a una ruta pública -> al login.
-      if (!isAuthenticated && !isGuest && !isGoingToPublic) {
-        return AppRoutes.login;
-      }
-      
-      // Si estamos autenticados y vamos a una ruta pública -> al home de admin.
-      if (isAuthenticated && isGoingToPublic) {
+      // Si el usuario está logueado y trata de ir a la pantalla de login, lo mandamos a home.
+      if (isAuthenticated && location == AppRoutes.login) {
         return AppRoutes.home;
       }
 
-      // No se necesita redirección en los demás casos.
+      // Si el usuario NO está logueado y trata de ir a una ruta que NO es pública,
+      // lo mandamos al login.
+      if (!isAuthenticated && !publicRoutes.contains(location)) {
+        return AppRoutes.login;
+      }
+
+      // Para todos los demás casos (usuario logueado en ruta protegida, cualquier
+      // usuario en una ruta pública), no hacemos nada.
       return null;
     },
     errorBuilder: (context, state) => Scaffold(body: Center(child: Text('Ruta no encontrada: ${state.error}'))),
   );
 });
 
-// Helper para que GoRouter reaccione a cambios en un Stream (como el de nuestro provider)
+// Helper para que GoRouter reaccione a cambios en un Stream
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
     _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
   }
 
-  // MODIFICATION: Changed 'Subscription' to the correct type 'StreamSubscription'.
-  late final StreamSubscription _subscription;
+  late final StreamSubscription<dynamic> _subscription;
   
   @override
   void dispose() {

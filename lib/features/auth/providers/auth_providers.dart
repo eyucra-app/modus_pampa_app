@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:modus_pampa_v3/core/providers/dio_provider.dart';
 import 'package:modus_pampa_v3/data/models/user_model.dart';
 import 'package:modus_pampa_v3/data/repositories/auth_repository.dart';
+import 'package:modus_pampa_v3/features/affiliates/providers/affiliate_providers.dart';
+import 'package:modus_pampa_v3/features/settings/providers/settings_provider.dart';
 import 'package:modus_pampa_v3/main.dart'; // Para dbHelper y sharedPreferences
 import 'package:uuid/uuid.dart';
 
@@ -49,14 +52,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthLoading();
     try {
       final passwordHash = sha256.convert(utf8.encode(password)).toString();
+      print("🔐 Intentando login para: $email");
+      print("🔑 Contraseña ingresada: $password");
+      print("🔒 Hash generado: $passwordHash");
+      
       final user = await _authRepository.login(email, passwordHash);
       if (user != null) {
+        print("✅ Usuario autenticado correctamente: ${user.email}");
         await sharedPreferences.setString('session_user_uuid', user.uuid);
         state = Authenticated(user);
       } else {
+        print("❌ Credenciales incorrectas para: $email");
+        print("🚨 Emitiendo estado AuthError...");
         state = const AuthError('Correo o contraseña incorrectos.');
+        print("🚨 Estado AuthError emitido correctamente.");
       }
     } catch (e) {
+      print("💥 Error en login: $e");
       state = AuthError('Error al iniciar sesión: ${e.toString()}');
     }
   }
@@ -65,7 +77,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String userName,
     required String email,
     required String password,
-    UserRole role = UserRole.user, // Rol por defecto
+    UserRole role = UserRole.superAdmin, // Rol por defecto
   }) async {
     state = AuthLoading();
     try {
@@ -75,12 +87,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return;
       }
 
+      final now = DateTime.now(); // Get current time
       final newUser = User(
         uuid: const Uuid().v4(),
         userName: userName,
         email: email,
         passwordHash: sha256.convert(utf8.encode(password)).toString(),
         role: role,
+        createdAt: now, // Provide createdAt
+        updatedAt: now, // Initialize updatedAt
       );
       await _authRepository.register(newUser);
       // Después de registrar, iniciar sesión automáticamente
@@ -109,7 +124,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 // Provider para el Repositorio
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(dbHelper);
+  return AuthRepository(
+    dbHelper,
+    ref.watch(pendingOperationRepositoryProvider),
+    ref.watch(dioProvider), // Inyectar Dio
+    ref.watch(settingsServiceProvider), // Inyectar SettingsService
+  );
 });
 
 // Provider para el StateNotifier de Autenticación

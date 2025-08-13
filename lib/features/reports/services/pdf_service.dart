@@ -7,7 +7,7 @@ import 'package:modus_pampa_v3/data/models/attendance_model.dart';
 import 'package:modus_pampa_v3/data/models/contribution_model.dart';
 import 'package:modus_pampa_v3/data/models/fine_model.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/widgets.dart' as pw; // Usar solo este alias
 
 class PdfService {
 
@@ -35,9 +35,16 @@ class PdfService {
     ];
     
     if (isMobile) {
-      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: content)));
+      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start, 
+        children: [
+          ...content, 
+          pw.SizedBox(height: 20), 
+          _buildFooter(pwContext)
+        ]
+      )));
     } else {
-      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(25), pageFormat: pageFormat, build: (pw.Context pwContext) => content));
+      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(25), pageFormat: pageFormat, footer: _buildFooter, build: (pw.Context pwContext) => content));
     }
 
     return doc.save();
@@ -48,11 +55,19 @@ class PdfService {
     final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
     final pageFormat = isMobile ? PdfPageFormat.roll80 : PdfPageFormat.letter;
     final posStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: isMobile ? 8 : 10);
-    doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+    
+    final content = [
         _buildHeader(isMobile, posStyle, 'HISTORIAL DE MULTAS', affiliate.fullName.toUpperCase()),
         pw.SizedBox(height: 10),
         _buildFinesTable(fines, isMobile, posStyle, showStatus: true),
-    ])));
+    ];
+    
+    if (isMobile) {
+      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context context) => pw.Column(children: [...content, pw.SizedBox(height: 20), _buildFooter(context)])));
+    } else {
+      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, footer: _buildFooter, build: (pw.Context context) => content));
+    }
+    
     return doc.save();
   }
 
@@ -61,11 +76,19 @@ class PdfService {
     final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
     final pageFormat = isMobile ? PdfPageFormat.roll80 : PdfPageFormat.letter;
     final posStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: isMobile ? 8 : 10);
-    doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+    
+    final content = [
         _buildHeader(isMobile, posStyle, 'HISTORIAL DE APORTES', affiliate.fullName.toUpperCase()),
         pw.SizedBox(height: 10),
         _buildContributionsTable(links, isMobile, posStyle, showStatus: true, allContributions: allContributions),
-    ])));
+    ];
+
+    if (isMobile) {
+      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context context) => pw.Column(children: [...content, pw.SizedBox(height: 20), _buildFooter(context)])));
+    } else {
+      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, footer: _buildFooter, build: (pw.Context context) => content));
+    }
+    
     return doc.save();
   }
 
@@ -76,22 +99,36 @@ class PdfService {
     final posStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: isMobile ? 8 : 10);
     final cellStyle = isMobile ? posStyle : const pw.TextStyle(fontSize: 9);
 
-    doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        _buildHeader(isMobile, posStyle, 'HISTORIAL DE ASISTENCIAS', affiliate.fullName.toUpperCase()),
-        pw.SizedBox(height: 10),
-        pw.Table.fromTextArray(
-            columnWidths: const { 0: pw.FlexColumnWidth(1.5), 1: pw.FlexColumnWidth(3), 2: pw.FlexColumnWidth(2.5) },
-            headerStyle: posStyle,
-            cellStyle: cellStyle,
-            headerAlignment: pw.Alignment.center,
-            cellAlignment: pw.Alignment.center,
-            headers: ['Fecha', 'Lista', 'Estado'],
-            data: records.map((r) {
-              final list = allLists.firstWhere((l) => l.id == r.listId, orElse: () => AttendanceList(name: 'N/A', createdAt: DateTime.now()));
-              return [DateFormat('dd/MM/yy').format(r.registeredAt), list.name, r.status.name];
-            }).toList()
-        ),
-    ])));
+    final content = [
+      _buildHeader(isMobile, posStyle, 'HISTORIAL DE ASISTENCIAS', affiliate.fullName.toUpperCase()),
+      pw.SizedBox(height: 10),
+      pw.TableHelper.fromTextArray(
+        columnWidths: const { 0: pw.FlexColumnWidth(1.5), 1: pw.FlexColumnWidth(3), 2: pw.FlexColumnWidth(2.5) },
+        headerStyle: posStyle,
+        cellStyle: cellStyle,
+        headerAlignment: pw.Alignment.center,
+        cellAlignment: pw.Alignment.center,
+        headers: ['Fecha', 'Lista', 'Estado'],
+        data: records.map((r) {
+          final list = allLists.firstWhere(
+            (l) => l.uuid == r.listUuid,
+            orElse: () => AttendanceList(
+              uuid: '', 
+              name: 'N/A',
+              createdAt: DateTime.now(),
+            ),
+          );
+          return [DateFormat('dd/MM/yy').format(r.registeredAt), list.name, r.status.name];
+        }).toList()
+      ),
+    ];
+
+    if (isMobile) {
+      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context context) => pw.Column(children: [...content, pw.SizedBox(height: 20), _buildFooter(context)])));
+    } else {
+      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, footer: _buildFooter, build: (pw.Context context) => content));
+    }
+
     return doc.save();
   }
 
@@ -104,15 +141,42 @@ class PdfService {
     final posStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: isMobile ? 8 : 10);
     final cellStyle = isMobile ? posStyle : const pw.TextStyle(fontSize: 9);
 
-    doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) { return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [ _buildHeader(isMobile, posStyle, 'REPORTE DE APORTE', contribution.name.toUpperCase()), pw.SizedBox(height: 10), pw.Table.fromTextArray(
-      columnWidths: const { 0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(3), 2: pw.FlexColumnWidth(1.5), 3: pw.FlexColumnWidth(1.5), 4: pw.FlexColumnWidth(2.5) },
-      headerStyle: posStyle,
-      cellStyle: cellStyle,
-      headerAlignment: pw.Alignment.center,
-      cellAlignment: pw.Alignment.center,
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300), 
-      headers: ['ID', 'Afiliado', 'Monto', 'Pagado', 'Estado'], 
-      data: links.map((link) { final affiliate = allAffiliates.firstWhere((a) => a.uuid == link.affiliateUuid, orElse: () => Affiliate(uuid: '', id: 'N/A', firstName: 'No Encontrado', lastName: '', ci: '')); return [affiliate.id, affiliate.fullName, 'Bs. ${link.amountToPay.toStringAsFixed(2)}', 'Bs. ${link.amountPaid.toStringAsFixed(2)}', link.isPaid ? 'PAGADO' : 'PENDIENTE']; }).toList()), ]); }, ),); return doc.save(); }
+    final content = [
+      _buildHeader(isMobile, posStyle, 'REPORTE DE APORTE', contribution.name.toUpperCase()), 
+      pw.SizedBox(height: 10), 
+      pw.TableHelper.fromTextArray(
+        columnWidths: const { 0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(3), 2: pw.FlexColumnWidth(1.5), 3: pw.FlexColumnWidth(1.5), 4: pw.FlexColumnWidth(2.5) },
+        headerStyle: posStyle,
+        cellStyle: cellStyle,
+        headerAlignment: pw.Alignment.center,
+        cellAlignment: pw.Alignment.center,
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300), 
+        headers: ['ID', 'Afiliado', 'Monto', 'Pagado', 'Estado'], 
+        data: links.map((link) { 
+          final affiliate = allAffiliates.firstWhere(
+            (a) => a.uuid == link.affiliateUuid, 
+            orElse: () => Affiliate(
+              uuid: '', 
+              id: 'N/A', 
+              firstName: 'No Encontrado', 
+              lastName: '', 
+              ci: '',
+              createdAt: DateTime.now(),
+            ),
+          ); 
+          return [affiliate.id, affiliate.fullName, 'Bs. ${link.amountToPay.toStringAsFixed(2)}', 'Bs. ${link.amountPaid.toStringAsFixed(2)}', link.isPaid ? 'PAGADO' : 'PENDIENTE']; 
+        }).toList()
+      ), 
+    ];
+
+    if (isMobile) {
+      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context context) => pw.Column(children: [...content, pw.SizedBox(height: 20), _buildFooter(context)])));
+    } else {
+      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, footer: _buildFooter, build: (pw.Context context) => content));
+    }
+    
+    return doc.save();
+  }
   
   Future<Uint8List> generateAttendanceReport({ required AttendanceList attendanceList, required List<AttendanceRecord> records, required List<Affiliate> allAffiliates }) async {
     final doc = pw.Document();
@@ -122,15 +186,43 @@ class PdfService {
     final cellStyle = isMobile ? posStyle : const pw.TextStyle(fontSize: 9);
 
     final presentAndLate = records.where((r) => r.status != AttendanceRecordStatus.FALTA).toList();
-    doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context pwContext) { return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [ _buildHeader(isMobile, posStyle, 'REPORTE DE ASISTENCIA', attendanceList.name.toUpperCase()), pw.SizedBox(height: 10), pw.Table.fromTextArray(
-      columnWidths: const { 0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(2.5), 2: pw.FlexColumnWidth(2.5), 3: pw.FlexColumnWidth(2.5) },
-      headerStyle: posStyle,
-      cellStyle: cellStyle,
-      headerAlignment: pw.Alignment.center,
-      cellAlignment: pw.Alignment.center,
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-      headers: ['ID', 'Afiliado', 'Hora', 'Estado'], 
-      data: presentAndLate.map((record) { final affiliate = allAffiliates.firstWhere((a) => a.uuid == record.affiliateUuid, orElse: () => Affiliate(uuid: '', id: 'N/A', firstName: 'No Encontrado', lastName: '', ci: '')); return [affiliate.id, affiliate.fullName, DateFormat.Hms().format(record.registeredAt), record.status.name.toUpperCase()]; }).toList()), ]); }, ),); return doc.save(); }
+    
+    final content = [
+      _buildHeader(isMobile, posStyle, 'REPORTE DE ASISTENCIA', attendanceList.name.toUpperCase()), 
+      pw.SizedBox(height: 10), 
+      pw.TableHelper.fromTextArray(
+        columnWidths: const { 0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(2.5), 2: pw.FlexColumnWidth(2.5), 3: pw.FlexColumnWidth(2.5) },
+        headerStyle: posStyle,
+        cellStyle: cellStyle,
+        headerAlignment: pw.Alignment.center,
+        cellAlignment: pw.Alignment.center,
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+        headers: ['ID', 'Afiliado', 'Hora', 'Estado'], 
+        data: presentAndLate.map((record) { 
+          final affiliate = allAffiliates.firstWhere(
+            (a) => a.uuid == record.affiliateUuid, 
+            orElse: () => Affiliate(
+              uuid: '', 
+              id: 'N/A', 
+              firstName: 'No Encontrado', 
+              lastName: '', 
+              ci: '',
+              createdAt: DateTime.now(),
+            ),
+          ); 
+          return [affiliate.id, affiliate.fullName, DateFormat.Hms().format(record.registeredAt), record.status.name.toUpperCase()]; 
+        }).toList()
+      ),
+    ];
+
+    if (isMobile) {
+      doc.addPage(pw.Page(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, build: (pw.Context context) => pw.Column(children: [...content, pw.SizedBox(height: 20), _buildFooter(context)])));
+    } else {
+      doc.addPage(pw.MultiPage(margin: const pw.EdgeInsets.all(10), pageFormat: pageFormat, footer: _buildFooter, build: (pw.Context context) => content));
+    }
+    
+    return doc.save();
+  }
   
   // --- Widgets de construcción de PDF (ACTUALIZADOS) ---
 
@@ -142,7 +234,7 @@ class PdfService {
     List<String> headers = ['Fecha', 'Descripción', 'Pagado', 'Adeudado'];
     if (!showStatus) headers = ['Fecha', 'Descripción', 'Monto Adeudado'];
 
-    return pw.Table.fromTextArray(
+    return pw.TableHelper.fromTextArray(
       border: null,
       headerStyle: headerStyle,
       cellStyle: style,
@@ -167,7 +259,7 @@ class PdfService {
     List<String> headers = ['Aporte', 'Pagado', 'Adeudado'];
     if (!showStatus) headers = ['Aporte', 'Monto Adeudado'];
 
-    return pw.Table.fromTextArray(
+    return pw.TableHelper.fromTextArray(
       border: null,
       headerStyle: headerStyle,
       cellStyle: style,
@@ -175,7 +267,16 @@ class PdfService {
       cellAlignment: pw.Alignment.center,
       headers: headers,
       data: links.map((c) {
-        String contributionName = allContributions?.firstWhere((contrib) => contrib.id == c.contributionId, orElse: () => Contribution(id:0, name:'ID: ${c.contributionId}', date:DateTime.now(), defaultAmount:0)).name ?? c.contributionId.toString();
+        String contributionName = allContributions?.firstWhere(
+          (contrib) => contrib.uuid == c.contributionUuid, 
+          orElse: () => Contribution(
+            uuid: '',
+            name:'ID: ${c.contributionUuid}', 
+            date:DateTime.now(), 
+            defaultAmount:0,
+            createdAt: DateTime.now(),
+          ),
+        ).name ?? c.contributionUuid.toString();
         final debt = c.amountToPay - c.amountPaid;
         if (showStatus) {
            return [contributionName, 'Bs. ${c.amountPaid.toStringAsFixed(2)}', 'Bs. ${debt.toStringAsFixed(2)}'];
@@ -189,4 +290,20 @@ class PdfService {
   pw.Widget _buildSectionTitle(String title, bool isMobile, pw.TextStyle posStyle) { final style = isMobile ? posStyle : pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14); return pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 8), child: pw.Text(title.toUpperCase(), style: style)); }
   pw.Widget _buildFinancialSummary(Affiliate affiliate, bool isMobile, pw.TextStyle style) { return pw.Table(border: pw.TableBorder.all(), columnWidths: {0: const pw.FlexColumnWidth(2), 1: const pw.FlexColumnWidth(1.5)}, children: [_buildTableRow('Total Pagado:', 'Bs. ${affiliate.totalPaid.toStringAsFixed(2)}', style), _buildTableRow('Total Adeudado:', 'Bs. ${affiliate.totalDebt.toStringAsFixed(2)}', style, color: PdfColors.red100)]); }
   pw.TableRow _buildTableRow(String key, String value, pw.TextStyle style, {PdfColor? color}) { return pw.TableRow(decoration: pw.BoxDecoration(color: color), children: [pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(key, style: style)), pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(value, style: style, textAlign: pw.TextAlign.right))]); }
+  
+  pw.Widget _buildFooter(pw.Context context) {
+    return pw.Center(
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Text('-----MODUS PAMPA FLORIDA------'),
+          pw.SizedBox(height: 3),
+          pw.Text('.           . '),
+          pw.SizedBox(height: 1),
+          pw.Text('..         .. '),
+        ],
+      ),
+    );
+  }
 }

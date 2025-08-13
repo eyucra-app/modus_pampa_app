@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.packages
+
+# Flutter/Dart build outputs
+.dart_tool/
+build/
+!build/web
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Flutter specific
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# Local environment
+.env
+.env.local
+.env.production
+.env.staging
+
+# Test files
+test/
+coverage/
+
+# Documentation (optional - remove if you want to deploy docs)
+*.md
+!README.md

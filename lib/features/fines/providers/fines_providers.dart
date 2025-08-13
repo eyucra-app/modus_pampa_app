@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:modus_pampa_v3/core/providers/dio_provider.dart';
 import 'package:modus_pampa_v3/data/models/affiliate_model.dart';
 import 'package:modus_pampa_v3/data/models/fine_model.dart';
 import 'package:modus_pampa_v3/data/repositories/affiliate_repository.dart';
 import 'package:modus_pampa_v3/data/repositories/fine_repository.dart';
 import 'package:modus_pampa_v3/features/affiliates/providers/affiliate_providers.dart';
+import 'package:modus_pampa_v3/features/settings/providers/settings_provider.dart';
 import 'package:modus_pampa_v3/main.dart';
 import 'package:modus_pampa_v3/shared/utils/decimal_utils.dart';
 
@@ -76,17 +78,17 @@ class FineOperationNotifier extends StateNotifier<FineOperationState> {
   Future<void> deleteFine(Fine fine, Affiliate affiliate) async {
     state = FineOperationLoading();
     try {
-      // 1. Eliminar la multa de la base de datos
-      await _fineRepo.deleteFine(fine.id!);
+      // Pasamos el objeto 'fine' completo al repositorio
+      await _fineRepo.deleteFine(fine);
 
-      // 2. Actualizar los totales del afiliado (restando la deuda de la multa eliminada)
+      // 2. Actualizar los totales del afiliado (esto se queda igual)
       final updatedAffiliate = affiliate.copyWith(
         totalDebt: DecimalUtils.round(affiliate.totalDebt - (fine.amount - fine.amountPaid)),
         totalPaid: DecimalUtils.round(affiliate.totalPaid - fine.amountPaid),
       );
       await _affiliateRepo.updateAffiliate(updatedAffiliate);
 
-      // 3. Invalidar los providers para refrescar la UI
+      // 3. Invalidar los providers para refrescar la UI (esto se queda igual)
       _ref.invalidate(finesByAffiliateProvider(affiliate.uuid));
       _ref.invalidate(affiliatesWithFinesProvider);
       _ref.read(affiliateListNotifierProvider.notifier).loadAffiliates();
@@ -102,7 +104,12 @@ class FineOperationNotifier extends StateNotifier<FineOperationState> {
 
 // 1. Provider para el Repositorio de Multas
 final fineRepositoryProvider = Provider<FineRepository>((ref) {
-  return FineRepository(dbHelper);
+  return FineRepository(
+    dbHelper,
+    ref.watch(pendingOperationRepositoryProvider), // Inyectar dependencia
+    ref.watch(dioProvider), // Inyectar Dio
+    ref.watch(settingsServiceProvider), // Inyectar SettingsService
+  );
 });
 
 // 2. Provider para obtener afiliados que tienen multas pendientes

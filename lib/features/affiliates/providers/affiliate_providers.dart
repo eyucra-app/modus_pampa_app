@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:modus_pampa_v3/core/providers/dio_provider.dart';
 import 'package:modus_pampa_v3/data/models/affiliate_model.dart';
 import 'package:modus_pampa_v3/data/repositories/affiliate_repository.dart';
+import 'package:modus_pampa_v3/data/repositories/pending_operation_repository.dart';
+import 'package:modus_pampa_v3/features/settings/providers/settings_provider.dart';
 import 'package:modus_pampa_v3/main.dart';
 
 // --- ESTADOS ---
@@ -56,11 +59,21 @@ class AffiliateListNotifier extends StateNotifier<AffiliateListState> {
   }
 
   Future<void> loadAffiliates() async {
+    // Es seguro modificar el estado antes de un 'await'
     state = state.copyWith(allAffiliates: const AsyncLoading());
     try {
       final affiliates = await _repository.getAllAffiliates();
+
+      // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+      // Antes de intentar usar el 'state', verifica si el notifier sigue activo.
+      if (!mounted) return;
+
       state = state.copyWith(allAffiliates: AsyncData(affiliates));
     } catch (e, s) {
+      // --- ¡TAMBIÉN AQUÍ! ---
+      // Es una buena práctica hacerlo también en el bloque catch.
+      if (!mounted) return;
+      
       state = state.copyWith(allAffiliates: AsyncError(e, s));
     }
   }
@@ -68,6 +81,7 @@ class AffiliateListNotifier extends StateNotifier<AffiliateListState> {
   void filterByTags(Set<String> tags) {
     state = state.copyWith(activeTags: tags);
   }
+  
 }
 
 // Notifier para operaciones CUD
@@ -121,7 +135,21 @@ class AffiliateOperationNotifier extends StateNotifier<AffiliateOperationState> 
 
 // --- PROVIDERS ---
 
-final affiliateRepositoryProvider = Provider<AffiliateRepository>((ref) => AffiliateRepository(dbHelper));
+// 1. Provider para el nuevo repositorio de operaciones pendientes
+final pendingOperationRepositoryProvider = Provider<PendingOperationRepository>((ref) {
+  return PendingOperationRepository(dbHelper);
+});
+
+// 2. Provider para el Repositorio de Afiliados
+// Ahora inyecta la dependencia del repositorio de operaciones pendientes
+final affiliateRepositoryProvider = Provider<AffiliateRepository>((ref) {
+  return AffiliateRepository(
+    dbHelper,
+    ref.watch(pendingOperationRepositoryProvider),
+    ref.watch(dioProvider), // Inyectar Dio
+    ref.watch(settingsServiceProvider), // Inyectar SettingsService
+  );
+});
 
 // ÚNICA FUENTE DE VERDAD para la lista de afiliados
 final affiliateListNotifierProvider = StateNotifierProvider<AffiliateListNotifier, AffiliateListState>((ref) {

@@ -18,6 +18,8 @@ class AppColors {
 // Rutas de la aplicación para GoRouter
 class AppRoutes {
   static const String splash = '/';
+  static const String offlineSplashScreen = '/offline-splash-screen';
+  static const String splashScreen = '/splash-screen';
   static const String login = '/login';
   static const String register = '/register';
   static const String guestLogin = '/guest-login';
@@ -28,6 +30,7 @@ class AppRoutes {
   static const String fines = '/fines';
   static const String attendance = '/attendance';
   static const String settings = '/settings';
+  static const String pendingOperations = '/pending-operations';
   static const String guestDetail = '/guest-detail';
 }
 
