@@ -30,16 +30,24 @@ class _AttendanceDetailScreenState
   bool _isGeneratingReport = false;
   bool _isFinalizing = false;
 
-
   @override
   void reassemble() {
     super.reassemble();
-    // Solo manejar cámara en plataformas móviles (Android/iOS)
-    if (Platform.isAndroid || Platform.isIOS) {
-      if (Platform.isAndroid) {
-        controller?.pauseCamera();
-      }
+    // Manejar cámara en plataformas que soportan QR (Web, Android, iOS)
+    if (kIsWeb) {
+      // En web, solo intentar resumir la cámara
       controller?.resumeCamera();
+    } else if (!kIsWeb) {
+      // En plataformas nativas (Android/iOS)
+      try {
+        if (Platform.isAndroid) {
+          controller?.pauseCamera();
+        }
+        controller?.resumeCamera();
+      } catch (e) {
+        // Ignorar errores de plataforma
+        print("Error en reassemble: $e");
+      }
     }
   }
 
@@ -125,8 +133,19 @@ class _AttendanceDetailScreenState
   }
 
   Widget _buildQRScanner() {
-    if (kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      // Interfaz de registro manual para Web y Desktop
+    // Verificar si es desktop (pero solo en plataformas nativas)
+    bool isDesktop = false;
+    if (!kIsWeb) {
+      try {
+        isDesktop = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+      } catch (e) {
+        // En caso de error, asumir que no es desktop
+        isDesktop = false;
+      }
+    }
+    
+    if (isDesktop) {
+      // Interfaz de registro manual para Desktop solamente
       return Container(
         color: Colors.black87,
         child: Center(
@@ -134,7 +153,7 @@ class _AttendanceDetailScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                kIsWeb ? Icons.web : Icons.desktop_windows,
+                Icons.desktop_windows,
                 size: 60,
                 color: Colors.white70,
               ),
@@ -150,9 +169,7 @@ class _AttendanceDetailScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                kIsWeb 
-                  ? 'Versión Web optimizada para registro manual\nUsa el botón "Registrar Manualmente"'
-                  : 'Usa el botón "Registrar Manualmente"\npara agregar afiliados a la lista',
+                'Usa el botón "Registrar Manualmente"\npara agregar afiliados a la lista',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -174,7 +191,7 @@ class _AttendanceDetailScreenState
         ),
       );
     } else {
-      // Usar qr_code_scanner_plus para móviles
+      // Usar qr_code_scanner_plus para Web y móviles
       return qr_plus.QRView(
         key: qrKey,
         onQRViewCreated: _onQRViewCreated,
@@ -190,11 +207,22 @@ class _AttendanceDetailScreenState
   }
 
   List<Widget> _buildCameraControls() {
-    if (kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      // No mostrar controles en Web y Desktop, ya están integrados en la interfaz
+    // Verificar si es desktop (pero solo en plataformas nativas)
+    bool isDesktop = false;
+    if (!kIsWeb) {
+      try {
+        isDesktop = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+      } catch (e) {
+        // En caso de error, asumir que no es desktop
+        isDesktop = false;
+      }
+    }
+    
+    if (isDesktop) {
+      // No mostrar controles en Desktop, ya están integrados en la interfaz
       return [];
     } else {
-      // Controles para qr_code_scanner_plus
+      // Controles para qr_code_scanner_plus en Web y móviles
       return [
         IconButton(
           icon: FutureBuilder<bool?>(
