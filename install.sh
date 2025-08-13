@@ -5,15 +5,18 @@ echo "Installing Flutter..."
 
 # Download and extract Flutter
 git clone https://github.com/flutter/flutter.git -b stable --depth 1
+
+# Set Flutter path
 export PATH="$PATH:`pwd`/flutter/bin"
+export FLUTTER_ROOT="`pwd`/flutter"
 
 # Pre-cache binaries
-flutter precache --web
+./flutter/bin/flutter precache --web
 
 # Enable web support
-flutter config --enable-web
+./flutter/bin/flutter config --enable-web
 
 # Get dependencies
-flutter pub get
+./flutter/bin/flutter pub get
 
 echo "Flutter installation completed!"

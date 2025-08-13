@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "name": "modus-pampa-v3",
-  "buildCommand": "chmod +x install.sh && ./install.sh && flutter build web --release",
+  "buildCommand": "chmod +x install.sh && ./install.sh && ./flutter/bin/flutter build web --release",
   "outputDirectory": "build/web",
   "installCommand": "echo 'Using custom install script'",
   "framework": null,
