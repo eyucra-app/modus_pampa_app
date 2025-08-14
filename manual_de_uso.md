@@ -563,6 +563,36 @@ Contraseña: Test.123#
 - **Cache inteligente**: Los assets se actualizan automáticamente
 - **Rollback**: Posibilidad de volver a versiones anteriores si hay problemas
 
+### 🔄 Cómo Actualizar la Aplicación en Vercel
+
+#### Para Desarrolladores
+**Proceso automático de actualización:**
+1. **Hacer cambios** en el código localmente
+2. **Probar cambios**: `flutter run -d chrome`
+3. **Commit**: `git add . && git commit -m "descripción"`
+4. **Push**: `git push origin main`
+5. **Esperar 2-3 minutos** - Vercel despliega automáticamente
+
+#### Para Usuarios Finales
+**Si no ves las últimas actualizaciones:**
+1. **Refrescar navegador**: Presiona `Ctrl + F5` (hard refresh)
+2. **Limpiar cache**: Ve a configuración del navegador
+3. **Verificar URL**: Asegúrate de estar en https://modus-pampa-v3.vercel.app
+4. **Esperar**: Los cambios pueden tardar 5 minutos en propagarse
+
+#### Verificar Actualizaciones
+- **Estado de la app**: Revisa si hay cambios visuales
+- **Funcionalidades nuevas**: Prueba las características recién añadidas
+- **Versión**: Busca el número de versión en Configuración (si está disponible)
+
+#### Problemas Comunes con Actualizaciones
+**Si la app no funciona después de una actualización:**
+1. **Hard refresh**: `Ctrl + F5` en el navegador
+2. **Limpiar datos**: Borrar cache y cookies del sitio
+3. **Probar navegador diferente**: Chrome, Firefox, Edge
+4. **Modo incógnito**: Verificar si funciona sin cache
+5. **Reportar problema**: Si persiste, contactar soporte técnico
+
 ### Monitoreo y Estadísticas
 - **Uptime**: 99.9% de disponibilidad garantizada
 - **Analytics**: Métricas de uso y rendimiento

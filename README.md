@@ -146,6 +146,45 @@ flutter run -d <device-id>
    - Build toma aproximadamente 2-3 minutos
    - SSL y CDN incluidos automáticamente
 
+### 🔄 Proceso de Actualización en Vercel
+
+#### Actualización Automática (Recomendado)
+```bash
+# 1. Realizar cambios en el código
+# 2. Verificar que los cambios funcionan localmente
+flutter run -d chrome
+
+# 3. Hacer commit de los cambios
+git add .
+git commit -m "descripción de los cambios"
+
+# 4. Push a GitHub (trigger automático del deploy)
+git push origin main
+
+# 5. Vercel detecta automáticamente el push y despliega
+# Tiempo estimado: 2-3 minutos
+```
+
+#### Verificar Estado del Deploy
+1. **GitHub**: Ver commits recientes en el repositorio
+2. **Vercel Dashboard**: Monitorear build en tiempo real
+3. **URL de producción**: https://modus-pampa-v3.vercel.app
+4. **Cache del navegador**: Hacer hard refresh (Ctrl+F5) si no ves cambios
+
+#### Solución de Problemas en Deploy
+```bash
+# Si el build falla, verificar:
+1. Sintaxis de código correcta
+2. Dependencias en pubspec.yaml actualizadas
+3. Errores en console de Vercel
+4. Configuración de vercel.json intacta
+
+# Para rollback manual si hay problemas:
+# Ir a Vercel Dashboard > Project > Deployments
+# Seleccionar deployment anterior funcional
+# Click "Promote to Production"
+```
+
 ### Despliegue Manual con Vercel CLI
 
 ```bash
