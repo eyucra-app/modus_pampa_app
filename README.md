@@ -298,12 +298,34 @@ Background: Modo claro/oscuro (automático)
 | Característica | Web | Windows | Android | iOS |
 |----------------|-----|---------|---------|-----|
 | Gestión Afiliados | ✅ | ✅ | ✅ | ✅ |
-| Asistencia QR | ❌ | ❌ | ✅ | ✅ |
+| **Asistencia QR** | ✅ | ❌ | ✅ | ✅ |
 | Registro Manual | ✅ | ✅ | ✅ | ✅ |
 | Reportes PDF | ✅ | ✅ | ✅ | ✅ |
 | Carga Imágenes | ✅ | ✅ | ✅ | ✅ |
 | Sincronización | ✅ | ✅ | ✅ | ✅ |
 | Modo Offline | ✅ | ✅ | ✅ | ✅ |
+
+### 📱 Detalles del Sistema QR
+
+#### **Plataformas con QR Scanner**
+- **✅ Web**: `qr_code_scanner_plus` con acceso a cámara web
+- **✅ Android**: `qr_code_scanner_plus` con cámara nativa
+- **✅ iOS**: `qr_code_scanner_plus` con cámara nativa
+
+#### **Controles de Cámara QR**
+- **🔦 Flash**: Toggle on/off en todas las plataformas QR
+- **🔄 Cambiar Cámara**: Frontal/Trasera disponible
+- **🎯 Overlay**: Marco visual unificado para escaneo
+
+#### **Plataformas Solo Manual**
+- **❌ Windows**: Interfaz optimizada de registro manual
+- **❌ macOS**: Interfaz optimizada de registro manual  
+- **❌ Linux**: Interfaz optimizada de registro manual
+
+#### **Funcionalidad Híbrida**
+Todas las plataformas con QR también incluyen registro manual como respaldo:
+- **Web + Móvil**: QR Scanner + Botón "Registrar Manualmente"
+- **Desktop**: Solo "Registrar Manualmente" (interfaz optimizada)
 
 ## 🔧 Configuración Avanzada
 

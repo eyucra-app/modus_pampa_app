@@ -29,7 +29,8 @@ Esta guía te ayudará a utilizar todas las funcionalidades de Modus Pampa v3, d
 ### Características de la Versión Web
 - ✅ **Offline Support**: Funciona sin internet
 - ✅ **Responsive**: Se adapta a cualquier tamaño de pantalla
-- ✅ **Registro Manual**: Sistema optimizado para desktop
+- ✅ **Escaneo QR**: Cámara web integrada para registro rápido
+- ✅ **Registro Manual**: Sistema de respaldo optimizado
 - ✅ **Reportes PDF**: Generación y descarga directa
 - ✅ **Sincronización**: Datos en tiempo real con el servidor
 
@@ -173,8 +174,18 @@ Contraseña: Test.123#
    - ✅ Confirma el registro
 
 #### En Web
-- **Solo registro manual** disponible
-- Mismo proceso que Windows/Desktop
+1. **Escanear código QR**:
+   - La cámara web se activa automáticamente
+   - Enfoca el código QR del afiliado
+   - ✅ Registro automático al detectar código válido
+
+2. **Controles disponibles**:
+   - 🔦 Flash on/off (si la cámara lo soporta)
+   - 🔄 Cambiar cámara (frontal/trasera)
+
+3. **Registro manual como respaldo**:
+   - Botón **"Registrar Manualmente"** siempre disponible
+   - Mismo proceso que Windows/Desktop si prefieres no usar QR
 
 ### Ver Registros de Asistencia
 1. **Abrir lista de asistencia**
@@ -416,6 +427,12 @@ Contraseña: Test.123#
 - ✅ **Comportamiento esperado**: QR no disponible
 - ✅ Usa **"Registrar Manualmente"**
 
+**En Web:**
+- Verifica permisos de cámara en el navegador
+- Asegúrate de que el código QR sea válido
+- Intenta con mejor iluminación
+- Si no funciona, usa **"Registrar Manualmente"**
+
 **En Móvil:**
 - Verifica permisos de cámara
 - Asegúrate de que el código QR sea válido
@@ -459,7 +476,8 @@ Contraseña: Test.123#
 
 | Característica | Móvil | Desktop | Web |
 |----------------|-------|---------|-----|
-| Escaneo QR | ✅ Cámara | ❌ Manual | ❌ Manual |
+| **Escaneo QR** | ✅ Cámara | ❌ Manual | ✅ Cámara Web |
+| Registro Manual | ✅ Disponible | ✅ Principal | ✅ Respaldo |
 | Carga de fotos | ✅ Cámara/Galería | ✅ Archivos | ✅ Archivos |
 | Modo offline | ✅ Completo | ✅ Completo | ✅ Completo |
 | Reportes PDF | ✅ Compartir | ✅ Descargar | ✅ Descargar |
